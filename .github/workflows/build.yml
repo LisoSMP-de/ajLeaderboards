@@ -1,0 +1,114 @@
+
+name: Build & Release ajLeaderboards
+
+on:
+  push:
+    branches:
+      - master
+      - dev
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build & Release (${{ github.ref_name }})
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java 27
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '27'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          gradle-version: '9.9.1'
+
+      - name: Build
+        run: |
+          gradle clean shadowJar \
+            --no-daemon \
+            --stacktrace
+
+      - name: Prepare plugin JAR
+        shell: bash
+        run: |
+          mkdir -p dist
+
+          mapfile -t jars < <(
+            find build/libs -maxdepth 1 \
+              -name 'ajLeaderboards-*.jar' \
+              ! -name '*sources*' \
+              ! -name '*javadoc*'
+          )
+
+          if [ "${#jars[@]}" -ne 1 ]; then
+            echo "Expected exactly one plugin JAR."
+            printf '%s\n' "${jars[@]}"
+            exit 1
+          fi
+
+          cp "${jars[0]}" \
+            "dist/ajLeaderboards-${GITHUB_REF_NAME}-Java27.jar"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ajLeaderboards-${{ github.ref_name }}-Java27
+          path: dist/*.jar
+          if-no-files-found: error
+
+      - name: Prepare release
+        id: release
+        shell: bash
+        run: |
+          BRANCH="${GITHUB_REF_NAME}"
+          RUN="${GITHUB_RUN_NUMBER}"
+          ATTEMPT="${GITHUB_RUN_ATTEMPT}"
+
+          TAG="${BRANCH}-build-${RUN}-${ATTEMPT}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+          if [ "$BRANCH" = "master" ]; then
+            echo "name=ajLeaderboards Stable #${RUN}" \
+              >> "$GITHUB_OUTPUT"
+            echo "type=stable" >> "$GITHUB_OUTPUT"
+          else
+            echo "name=ajLeaderboards Dev #${RUN}" \
+              >> "$GITHUB_OUTPUT"
+            echo "type=dev" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish stable release
+        if: github.ref_name == 'master'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.release.outputs.tag }}
+          RELEASE_NAME: ${{ steps.release.outputs.name }}
+        run: |
+          gh release create "$TAG" dist/*.jar \
+            --title "$RELEASE_NAME" \
+            --target "$GITHUB_SHA" \
+            --generate-notes \
+            --latest
+
+      - name: Publish dev release
+        if: github.ref_name == 'dev'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.release.outputs.tag }}
+          RELEASE_NAME: ${{ steps.release.outputs.name }}
+        run: |
+          gh release create "$TAG" dist/*.jar \
+            --title "$RELEASE_NAME" \
+            --target "$GITHUB_SHA" \
+            --generate-notes \
+            --prerelease \
+            --latest=false
