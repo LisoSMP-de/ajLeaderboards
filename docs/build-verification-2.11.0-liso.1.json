@@ -1,0 +1,10 @@
+{
+  "version": "2.11.0-liso.1",
+  "sha256": "087168bf528002136ec00b72377e57ca62ff306307f2340581cff90e9f436296",
+  "unitTests": 58,
+  "failures": 0,
+  "bundledRuntimeSmoke": "passed",
+  "localBuildJdk": 21,
+  "liveJava27": "pending",
+  "commandsChanged": false
+}

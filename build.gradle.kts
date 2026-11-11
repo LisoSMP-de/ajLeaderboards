@@ -2,11 +2,10 @@ plugins {
     java
     `maven-publish`
     id("com.gradleup.shadow").version("8.3.9")
-    id("io.github.slimjar").version("1.3.0")
 }
 
 group = "us.ajg0702"
-version = "2.11.0"
+version = "2.11.0-liso.1"
 
 repositories {
     mavenCentral()
@@ -27,8 +26,8 @@ repositories {
 
 dependencies {
     testImplementation("junit:junit:4.12")
+    testRuntimeOnly("org.spigotmc:spigot-api:1.18.2-R0.1-SNAPSHOT")
 
-    implementation("io.github.slimjar:slimjar:1.2.7")
     compileOnly("com.github.MilkBowl:VaultAPI:1.7")
     compileOnly("org.spigotmc:spigot-api:1.18.2-R0.1-SNAPSHOT")
     compileOnly("me.clip:placeholderapi:2.11.6")
@@ -51,9 +50,9 @@ dependencies {
     implementation(project(":nms:nms-19"))
 
 
-    slim("com.zaxxer:HikariCP:3.4.5")
-    slim("com.h2database:h2:2.1.214")
-    slim("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.zaxxer:HikariCP:3.4.5")
+    implementation("com.h2database:h2:2.1.214")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
     //implementation("io.prometheus", "simpleclient", "0.9.0")
 }
 
@@ -73,24 +72,13 @@ tasks.withType<ProcessResources> {
     )
 }
 
-tasks.slimJar {
-    mirror("https://repo-mirror.ajg0702.us/mirror", "https://repo.papermc.io/repository/maven-public/")
-    mirror("https://repo-mirror.ajg0702.us/mirror", "https://repo.maven.apache.org/maven2/")
-    mirror("https://repo-mirror.ajg0702.us/mirror", "https://repo1.maven.org/maven2/")
-    mirror("https://repo-mirror.ajg0702.us/mirror", "https://oss.sonatype.org/content/groups/public/")
-    mirror("https://repo-mirror.ajg0702.us/mirror", "https://repo.vshnv.tech/")
-
+tasks.shadowJar {
     relocate("org.h2", "us.ajg0702.leaderboards.libs.h2")
     relocate("com.zaxxer.hikari", "us.ajg0702.leaderboards.libs.hikari")
-    relocate("com.squareup", "us.ajg0702.leaderboards.libs")
-    relocate("okhttp3", "us.ajg0702.leaderboards.libs.okhttp3")
-    relocate("okio", "us.ajg0702.leaderboards.libs.okio")
-}
-
-tasks.shadowJar {
+    mergeServiceFiles()
+    exclude("META-INF/*.SF", "META-INF/*.RSA", "META-INF/*.DSA")
     relocate("us.ajg0702.utils", "us.ajg0702.leaderboards.libs.utils")
     relocate("us.ajg0702.commands", "us.ajg0702.leaderboards.commands.base")
-    relocate("io.github.slimjar", "us.ajg0702.leaderboards.libs.slimjar")
     relocate("net.kyori", "us.ajg0702.leaderboards.libs.kyori")
     relocate("org.bstats", "us.ajg0702.leaderboards.libs.bstats")
     relocate("org.spongepowered", "us.ajg0702.leaderboards.libs")
@@ -112,9 +100,8 @@ tasks.shadowJar {
     exclude("org/hamcrest/**/*")
     exclude("LICENSE-junit.txt")
 
-    minimize {
-        exclude(project(":nms:nms-19"))
-    }
+    // JDBC, Kotlin and HTTP resources are loaded reflectively. Keep bundled runtime
+    // dependencies intact instead of relying on static reachability analysis.
 
     // This is set to prevent paper from remapping the jar.
     // This is an issue because paper's remapper has a bug around 1.21.1-1.21.4 that causes some plugins to error for no reason
@@ -153,3 +140,14 @@ java {
     sourceCompatibility = JavaVersion.VERSION_1_8
     targetCompatibility = JavaVersion.VERSION_1_8
 }
+
+val verifyBundledRuntime by tasks.registering(JavaExec::class) {
+    group = "verification"
+    description = "Loads dependencies from the final plugin JAR in an isolated classloader."
+    dependsOn(tasks.shadowJar, tasks.testClasses)
+    classpath = sourceSets.test.get().runtimeClasspath
+    mainClass.set("us.ajg0702.leaderboards.BundledRuntimeSmoke")
+    doFirst { args(tasks.shadowJar.get().archiveFile.get().asFile.absolutePath) }
+}
+
+tasks.check { dependsOn(verifyBundledRuntime) }

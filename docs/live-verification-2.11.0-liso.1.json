@@ -1,0 +1,31 @@
+{
+  "date": "2026-11-12",
+  "timezone": "Europe/Berlin",
+  "serverId": "9e5eb320",
+  "pluginVersion": "2.11.0-liso.1",
+  "jarSha256": "087168bf528002136ec00b72377e57ca62ff306307f2340581cff90e9f436296",
+  "previousJarBackup": "plugins/ajLeaderboards-master-Java27.jar.before-liso1",
+  "configurationAndDatabasesReplaced": false,
+  "server": {
+    "minecraft": "26.2",
+    "foliaCommit": "6162a7a",
+    "java": "Temurin 27+35",
+    "readyAt": "2026-11-12T00:14:12+01:00",
+    "startupSeconds": 26.616
+  },
+  "verification": {
+    "pluginEnabled": true,
+    "h2CacheLoaded": true,
+    "boardsLoaded": ["statistic_time_played", "vault_eco_balance"],
+    "papiRegistered": true,
+    "ajlbListResponded": true,
+    "moneyAndPlaytimeNameAndValuePlaceholdersResolved": true,
+    "initialAsyncLoadingResolvedOnNextRead": true,
+    "moneyEmptyLeaderboardFallback": "Niemand / 0",
+    "playtimeReturnedNamedEntryAndFormattedTime": true,
+    "slimJarSelfAttachErrorObserved": false,
+    "missingOkHttpErrorObserved": false,
+    "inGameHologramAppearanceTested": false
+  },
+  "scope": "Nur ajLeaderboards ausgetauscht. Keine Commands, Berechtigungen, anderen Plugins oder Weltdaten geändert."
+}
