@@ -1,9 +1,5 @@
 package us.ajg0702.leaderboards;
 
-import io.github.slimjar.app.builder.ApplicationBuilder;
-import io.github.slimjar.resolver.data.Mirror;
-import io.github.slimjar.resolver.data.Repository;
-import io.github.slimjar.resolver.mirrors.SimpleMirrorSelector;
 import me.clip.placeholderapi.PlaceholderAPI;
 import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import net.kyori.adventure.text.Component;
@@ -50,11 +46,6 @@ import us.ajg0702.utils.foliacompat.Task;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.security.NoSuchAlgorithmException;
 import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -102,17 +93,9 @@ public class LeaderboardPlugin extends JavaPlugin {
         // Also because it's bad for ppl to have a trojan on their server.
         trojanScanner.scan();
 
-        try {
-            Path downloadPath = Paths.get(getDataFolder().getPath() + File.separator + "libs");
-            ApplicationBuilder.appending("ajLeaderboards")
-                    .logger(new SlimJarLogger(this))
-                    .downloadDirectoryPath(downloadPath)
-                    .internalRepositories(Collections.singleton(new Repository(new URL("https://repo-mirror.ajg0702.us/mirror/"))))
-                    .mirrorSelector((a, b) -> Collections.singleton(new Repository(new URL("https://repo-mirror.ajg0702.us/mirror/"))))
-                    .build();
-        } catch (IOException | ReflectiveOperationException | URISyntaxException | NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        }
+        // Runtime dependencies are bundled and relocated at build time. No JVM
+        // self-attachment or dependency download is required during startup.
+
     }
 
     @Override

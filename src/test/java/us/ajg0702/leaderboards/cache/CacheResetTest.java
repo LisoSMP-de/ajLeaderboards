@@ -147,23 +147,12 @@ public class CacheResetTest {
      */
     @Test
     public void testBuggyPatternWouldBeDetected() throws Exception {
-        // Current correct time in millis
-        long correctNow = System.currentTimeMillis();
-        
-        // Simulate the buggy calculation (what was in the old code)
-        long buggyTimestamp = LocalDateTime.now().atOffset(ZoneOffset.UTC).toEpochSecond() * 1000;
-        
-        // The difference should be enormous - the buggy code treats seconds as milliseconds
-        // resulting in a timestamp ~50 years in the past (depending on when run)
-        long difference = correctNow - buggyTimestamp;
-        
-        System.out.println("Current time (ms): " + correctNow);
-        System.out.println("Buggy timestamp (ms): " + buggyTimestamp);
-        System.out.println("Difference: " + difference + " ms (" + (difference/1000/60/60/24) + " days)");
-        
-        // Buggy code produces timestamps off by ~1.5 billion milliseconds (~17 days) or more
-        // because it's using epoch SECONDS multiplied by 1000, not epoch MILLISECONDS
-        assertTrue("Buggy pattern would be off by at least 1 second (1000ms)", 
-            difference > 1000);
+        // Interpreting local wall time as UTC shifts the instant by the local offset.
+        // Use a fixed positive offset instead of depending on the machine timezone.
+        Instant instant = Instant.parse("2026-06-01T12:00:00Z");
+        LocalDateTime local = LocalDateTime.ofInstant(instant, ZoneOffset.ofHours(2));
+        long buggyTimestamp = local.atOffset(ZoneOffset.UTC).toInstant().toEpochMilli();
+        assertEquals("Local wall time interpreted as UTC is two hours too late",
+                2L * 60 * 60 * 1000, buggyTimestamp - instant.toEpochMilli());
     }
 }
